@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { Noto_Nastaliq_Urdu, Plus_Jakarta_Sans } from "next/font/google";
 import { LangProvider } from "@/lib/i18n";
 import "./globals.css";
 
-const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-jakarta", weight: ["400", "500", "600", "700", "800"] });
-const nastaliq = Noto_Nastaliq_Urdu({ subsets: ["arabic"], variable: "--font-nastaliq", weight: ["400", "500", "600", "700"] });
+// Fonts load from Google Fonts at runtime (no build-time fetch, which broke `next build`).
+const FONTS =
+  "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap";
 
 export const metadata: Metadata = {
   title: "Roshan Rozgar — trusted workers at your door",
@@ -14,7 +14,13 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${jakarta.variable} ${nastaliq.variable} font-sans antialiased`}>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+        <link rel="stylesheet" href={FONTS} />
+      </head>
+      <body className="font-sans antialiased">
         <LangProvider>{children}</LangProvider>
       </body>
     </html>

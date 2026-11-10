@@ -38,7 +38,7 @@ export class AiClient {
   constructor(private prisma: PrismaService) {}
 
   private async call<T>(path: string, body: unknown, form = false): Promise<T | null> {
-    const url = process.env.AI_SERVICE_URL;
+    const url = process.env.AI_SERVICE_URL?.replace(/\/+$/, '');
     if (!url) return null;
     try {
       const res = await fetch(`${url}${path}`, {
