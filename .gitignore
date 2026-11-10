@@ -1,0 +1,24 @@
+# deps
+node_modules/
+# builds
+.next/
+out/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+# python
+.venv/
+venv/
+__pycache__/
+*.pyc
+# env (keep examples)
+.env
+.env.*
+!.env.example
+# misc
+.DS_Store
+Thumbs.db
+*.log
+uploads/

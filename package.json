@@ -1,0 +1,12 @@
+{
+  "name": "roshan-rozgar-tribyte",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -k -n web,api,ai -c cyan,magenta,yellow \"npm --prefix frontend run dev\" \"npm --prefix backend run start:dev\" \"npm run dev:ai\"",
+    "dev:ai": "cd ai && .venv\\Scripts\\python -m uvicorn app.main:app --port 8000",
+    "install:all": "npm --prefix frontend install && npm --prefix backend install"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
