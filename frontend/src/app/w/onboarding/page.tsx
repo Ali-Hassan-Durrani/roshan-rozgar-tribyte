@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { WorkerShell } from "@/components/shell";
 import { Button, Card, cx, DemoTag, ErrorNote, ListenButton, MicRecorder, PageFade, Skeleton } from "@/components/ui";
+import { VoiceAgent } from "@/components/voice-agent";
 import { mediaUrl, post, put, SECTORS, TRADES, useApi } from "@/lib/api";
+import { Line, transcriptText, VAPI_WORKER, vapiEnabled } from "@/lib/vapi";
 
 type Profile = { name: string; trade: string; experienceYears: number; areas: string[]; baseRate: number; workHours: string; voiceTranscript?: string };
 
@@ -95,7 +97,37 @@ function ProfileStep({ me, done, onSaved }: { me: any; done: boolean; onSaved: (
   const [err, setErr] = useState<string>();
   const [saving, setSaving] = useState(false);
 
-  // Fallback voice flow: record → STT → AI extraction → worker confirms every field.
+  // AI extraction → nothing is saved until the worker confirms every field (W4).
+  const fill = async (text: string) => {
+    setTranscript(text);
+    const x = await post<any>("/ai/extract-profile", { transcript: text });
+    setP((old) => ({
+      ...old,
+      ...(x.name ? { name: x.name } : {}),
+      ...(x.trade ? { trade: x.trade } : {}),
+      ...(x.experienceYears != null ? { experienceYears: x.experienceYears } : {}),
+      ...(x.areas?.length ? { areas: x.areas } : {}),
+      ...(x.baseRate ? { baseRate: x.baseRate } : {}),
+      ...(x.workHours ? { workHours: x.workHours } : {}),
+      voiceTranscript: text,
+    }));
+  };
+
+  // Vapi agent finished: the whole conversation goes to extraction.
+  const onAgentEnd = async (lines: Line[]) => {
+    if (!lines.some((l) => l.role === "user")) return;
+    setListening(true);
+    setErr(undefined);
+    try {
+      await fill(transcriptText(lines));
+    } catch {
+      setErr("پروفائل نہیں بن سکی — نیچے خود بھریں");
+    } finally {
+      setListening(false);
+    }
+  };
+
+  // Fallback voice flow: record → ElevenLabs STT → AI extraction.
   const onVoice = async (_: string, blob: Blob) => {
     setListening(true);
     setErr(undefined);
@@ -104,18 +136,7 @@ function ProfileStep({ me, done, onSaved }: { me: any; done: boolean; onSaved: (
       fd.append("audio", blob, "voice.webm");
       fd.append("lang", "ur");
       const { text } = await post<{ text: string }>("/voice/stt", fd);
-      setTranscript(text);
-      const x = await post<any>("/ai/extract-profile", { transcript: text });
-      setP((old) => ({
-        ...old,
-        ...(x.name ? { name: x.name } : {}),
-        ...(x.trade ? { trade: x.trade } : {}),
-        ...(x.experienceYears != null ? { experienceYears: x.experienceYears } : {}),
-        ...(x.areas?.length ? { areas: x.areas } : {}),
-        ...(x.baseRate ? { baseRate: x.baseRate } : {}),
-        ...(x.workHours ? { workHours: x.workHours } : {}),
-        voiceTranscript: text,
-      }));
+      await fill(text);
     } catch {
       setErr("آواز سروس دستیاب نہیں — نیچے خود بھریں (Voice service unavailable, fill below)");
     } finally {
@@ -152,9 +173,25 @@ function ProfileStep({ me, done, onSaved }: { me: any; done: boolean; onSaved: (
   return (
     <Card className="space-y-4">
       <div className="flex flex-col items-center gap-3 rounded-3xl bg-brand-50 p-6 text-center">
-        <p className="urdu text-xl font-bold">مائیک دبائیں اور بتائیں: نام، کام، کتنے سال، علاقہ، ریٹ</p>
-        <MicRecorder size={88} onDone={onVoice} label={<span className="urdu text-sm text-ink-2">{listening ? "سن رہے ہیں…" : "بولنے کے لیے دبائیں"}</span>} />
-        {transcript && <p className="rounded-2xl bg-white p-3 text-sm" dir="auto">“{transcript}”</p>}
+        <p className="urdu text-xl font-bold">مائیک دبائیں — ہماری اسسٹنٹ آپ سے سوال پوچھے گی</p>
+        {vapiEnabled ? (
+          <VoiceAgent
+            assistantId={VAPI_WORKER}
+            purpose="WORKER_ONBOARDING"
+            urdu
+            onEnd={onAgentEnd}
+            idleLabel={<span className="urdu">{listening ? "پروفائل بن رہی ہے…" : "بات شروع کرنے کے لیے دبائیں"}</span>}
+          />
+        ) : (
+          <MicRecorder size={88} onDone={onVoice} label={<span className="urdu text-sm text-ink-2">{listening ? "سن رہے ہیں…" : "بولنے کے لیے دبائیں"}</span>} />
+        )}
+        {vapiEnabled && (
+          <div className="flex items-center gap-2 text-sm text-ink-2">
+            <MicRecorder size={40} onDone={onVoice} />
+            <span className="urdu">یا ایک پیغام ریکارڈ کریں: نام، کام، سال، علاقہ، ریٹ</span>
+          </div>
+        )}
+        {transcript && <p className="max-h-32 overflow-y-auto whitespace-pre-line rounded-2xl bg-white p-3 text-left text-xs" dir="auto">{transcript}</p>}
       </div>
       <p className="urdu text-lg font-bold">کیا یہ ٹھیک ہے؟</p>
       <div className="grid gap-3 md:grid-cols-2" dir="ltr">

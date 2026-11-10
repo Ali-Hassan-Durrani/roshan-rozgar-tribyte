@@ -6,9 +6,11 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { RequestModal } from "@/components/request-modal";
 import { CustomerNav, useMe } from "@/components/shell";
-import { Avatar, Badge, Card, MicRecorder, PageFade, Skeleton, TradeIcon, TruckStrip } from "@/components/ui";
+import { Avatar, Badge, Card, MicRecorder, Modal, PageFade, Skeleton, TradeIcon, TruckStrip } from "@/components/ui";
+import { VoiceAgent } from "@/components/voice-agent";
 import { WorkerCard, WorkerCardData } from "@/components/worker-card";
 import { post, TRADES, useApi } from "@/lib/api";
+import { userText, VAPI_CUSTOMER, vapiEnabled } from "@/lib/vapi";
 
 const TRIES = ["AC thanda nahi kar raha", "Switch se chingari", "Darwaza band nahi hota"];
 
@@ -17,6 +19,7 @@ export default function Home() {
   const { data: me } = useMe();
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false);
+  const [talk, setTalk] = useState(false);
   const [req, setReq] = useState<WorkerCardData | null>(null);
   const { data } = useApi<{ workers: WorkerCardData[] }>("/workers/search?radiusKm=50", 10_000);
   const workers = data?.workers ?? [];
@@ -61,7 +64,12 @@ export default function Home() {
             <form onSubmit={(e) => { e.preventDefault(); find(); }} className="mt-7 flex items-center gap-2 rounded-2xl bg-white p-2 text-ink md:max-w-[640px]">
               <Search className="ml-3 h-5 w-5 shrink-0 text-ink-3" />
               <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Kitchen ka nalka leak ho raha hai…" className="min-w-0 flex-1 bg-transparent p-2 outline-none" />
-              {me && <MicRecorder size={44} onDone={onVoice} />}
+              {me && vapiEnabled && (
+                <button type="button" onClick={() => setTalk(true)} className="grid h-11 w-11 place-items-center rounded-xl bg-brand-50" aria-label="Talk to the assistant">
+                  <Mic className="h-5 w-5" />
+                </button>
+              )}
+              {me && !vapiEnabled && <MicRecorder size={44} onDone={onVoice} />}
               {!me && (
                 <Link href="/login" className="grid h-11 w-11 place-items-center rounded-xl bg-brand-50" aria-label="Speak (log in)">
                   <Mic className="h-5 w-5" />
@@ -154,6 +162,22 @@ export default function Home() {
         </div>
       </footer>
       <RequestModal worker={req} onClose={() => setReq(null)} />
+      <Modal open={talk} onClose={() => setTalk(false)} title="Tell us what's wrong">
+        <p className="mb-4 text-sm text-ink-2">Speak in English, Roman Urdu or Urdu. The assistant asks what&apos;s broken, how urgent it is and where you are.</p>
+        <VoiceAgent
+          assistantId={VAPI_CUSTOMER}
+          purpose="CUSTOMER_BOOKING"
+          idleLabel="Tap to start talking"
+          onEnd={(lines) => {
+            const said = userText(lines);
+            setTalk(false);
+            if (said) find(said);
+          }}
+        />
+        <div className="mt-4 flex items-center justify-center gap-2 border-t border-line pt-4 text-sm text-ink-2">
+          <MicRecorder size={40} onDone={(id, blob) => { setTalk(false); onVoice(id, blob); }} /> Or record a quick voice note
+        </div>
+      </Modal>
     </div>
   );
 }

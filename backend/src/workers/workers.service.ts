@@ -5,7 +5,7 @@ import { encrypt, hmac, maskPhone } from '../common/crypto';
 import { badRequest, conflict, forbidden, notFound } from '../common/errors';
 import { distanceKm, sectorPoint } from '../common/geo';
 import { PrismaService } from '../common/prisma.service';
-import { sniffImage } from '../common/uploads';
+import { cleanImage, sniffImage } from '../common/uploads';
 import { ProfileDto, SearchDto } from './dto';
 
 /** Token-sorted similarity 0–100 (rapidfuzz token_sort_ratio equivalent). */
@@ -98,9 +98,9 @@ export class WorkersService {
   async savePhoto(userId: string, file: Express.Multer.File, kind: 'PHOTO' | 'WORK_PHOTO') {
     const w = await this.mine(userId);
     this.assertEditable(w);
-    const mime = sniffImage(file.buffer);
+    const img = await cleanImage(file.buffer);
     const m = await this.prisma.media.create({
-      data: { ownerId: userId, kind, mime, size: file.size, data: new Uint8Array(file.buffer) },
+      data: { ownerId: userId, kind, ...img },
     });
     if (kind === 'PHOTO') await this.prisma.workerProfile.update({ where: { id: w.id }, data: { photoMediaId: m.id } });
     return { id: m.id };
@@ -140,10 +140,8 @@ export class WorkersService {
       [
         [front, 'CNIC_FRONT'],
         [back, 'CNIC_BACK'],
-      ].map(([file, kind]: any) =>
-        this.prisma.media.create({
-          data: { ownerId: userId, kind, mime: sniffImage(file.buffer), size: file.size, data: new Uint8Array(file.buffer) },
-        }),
+      ].map(async ([file, kind]: any) =>
+        this.prisma.media.create({ data: { ownerId: userId, kind, ...(await cleanImage(file.buffer)) } }),
       ),
     );
     const data = {

@@ -60,11 +60,12 @@ def extract_profile(transcript: str):
     trade, hits = _trade(t)
     if hits:
         out["trade"] = trade
-    m = re.search(r"(?:mera naam|my name is|naam|نام)\s*(?:hai|ہے)?\s*[:\-]?\s*([A-Za-z؀-ۿ]+(?:\s+[A-Za-z؀-ۿ]+)?)", t, re.I)
+    m = re.search(r"(?:mera naam|my name is|میرا نام|i am|main)\s*(?:hai|ہے|is)?\s*[:\-]?\s*([A-Za-z؀-ۿ]+(?:\s+[A-Za-z؀-ۿ]+)?)", t, re.I)
     if m:
         name = re.sub(r"\s+(hai|ہے|aur|اور)$", "", m.group(1).strip(), flags=re.I)
         out["name"] = name[:60]
-    nums = _numbers(t)
+    # Sector names like G-11 are not numbers the worker meant.
+    nums = _numbers(re.sub(r"\b[A-Z]-\d{1,2}\b", " ", t, flags=re.I))
     years = [n for n in nums if 0 < n <= 60]
     rates = [n for n in nums if 100 <= n <= 50000]
     if years:

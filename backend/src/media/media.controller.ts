@@ -10,7 +10,7 @@ import type { AuthUser } from '../common/auth';
 import { CurrentUser, Roles } from '../common/auth';
 import { badRequest, forbidden, notFound } from '../common/errors';
 import { PrismaService } from '../common/prisma.service';
-import { AUDIO_MAX, IMAGE_MAX, sniffAudio, sniffImage } from '../common/uploads';
+import { AUDIO_MAX, cleanImage, IMAGE_MAX, sniffAudio } from '../common/uploads';
 
 class UploadDto {
   @IsEnum(['VOICE', 'PROBLEM_PHOTO'])
@@ -29,9 +29,11 @@ export class MediaController {
     if (!file) throw badRequest('FILE_REQUIRED');
     const isVoice = dto.kind === 'VOICE';
     if (isVoice && file.size > AUDIO_MAX) throw badRequest('FILE_TOO_LARGE');
-    const mime = isVoice ? sniffAudio(file.buffer) : sniffImage(file.buffer);
+    const body = isVoice
+      ? { mime: sniffAudio(file.buffer), size: file.size, data: new Uint8Array(file.buffer) }
+      : await cleanImage(file.buffer);
     const m = await this.prisma.media.create({
-      data: { ownerId: u.id, kind: dto.kind as MediaKind, mime, size: file.size, data: new Uint8Array(file.buffer) },
+      data: { ownerId: u.id, kind: dto.kind as MediaKind, ...body },
       select: { id: true, kind: true, mime: true },
     });
     return m;

@@ -8,6 +8,7 @@ from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadF
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
+from . import llm
 from .ocr_cnic import read_cnic
 from .text import diagnose, extract_profile, moderate, summarize
 
@@ -114,29 +115,52 @@ async def tts(body: TtsIn):
     return Response(_tts_cache[ck], media_type="audio/mpeg")
 
 
+TRADE_SET = {"ELECTRICIAN", "PLUMBER", "AC_TECHNICIAN", "CARPENTER", "MECHANIC", "PAINTER"}
+
+
 @app.post("/extract/profile", dependencies=[Depends(internal)])
-def extract(body: TranscriptIn):
-    return extract_profile(body.transcript)
+async def extract(body: TranscriptIn):
+    rules = extract_profile(body.transcript)
+    ai = await llm.ask_json(llm.profile_prompt(body.transcript)) or {}
+    if ai.get("trade") not in TRADE_SET:
+        ai.pop("trade", None)
+    # LLM wins where it answered; rules fill the gaps.
+    return {**rules, **{k: v for k, v in ai.items() if v not in (None, "", [])}}
 
 
 @app.post("/diagnose", dependencies=[Depends(internal)])
-def diag(body: TextIn):
+async def diag(body: TextIn):
+    ai = await llm.ask_json(llm.diagnose_prompt(body.text))
+    if ai and ai.get("trade") in TRADE_SET:
+        return {"trade": ai["trade"], "issue": ai.get("issue") or body.text[:120], "confidence": float(ai.get("confidence") or 0.8)}
     return diagnose(body.text)
 
 
 @app.post("/moderate/review", dependencies=[Depends(internal)])
-def mod(body: TextIn):
-    return moderate(body.text)
+async def mod(body: TextIn):
+    rules = moderate(body.text)
+    if rules["flagged"]:
+        return rules
+    ai = await llm.ask_json(llm.moderate_prompt(body.text))
+    if ai and ai.get("flagged"):
+        return {"flagged": True, "reason": ai.get("reason") or "Flagged by AI"}
+    return rules
 
 
 @app.post("/summary/reviews", dependencies=[Depends(internal)])
-def summary(body: ReviewsIn):
+async def summary(body: ReviewsIn):
+    ai = await llm.ask_json(llm.summary_prompt(body.reviews))
+    if ai and ai.get("summary"):
+        return {"summary": ai["summary"], "tags": ai.get("tags", [])[:3]}
     return summarize(body.reviews)
 
 
 @app.post("/translate", dependencies=[Depends(internal)])
-def translate(body: TranslateIn):
-    # No LLM key configured: the UI shows the original + read-aloud instead.
-    raise HTTPException(503, "translation needs LLM_API_KEY")
+async def translate(body: TranslateIn):
+    ai = await llm.ask_json(llm.translate_prompt(body.text, body.to))
+    if not ai or not ai.get("text"):
+        # No LLM: the UI shows the original + read-aloud instead.
+        raise HTTPException(503, "translation unavailable")
+    return {"text": ai["text"]}
 
 
