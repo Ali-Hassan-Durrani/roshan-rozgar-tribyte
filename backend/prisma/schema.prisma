@@ -1,0 +1,286 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  WORKER
+  ADMIN
+}
+
+enum Lang {
+  UR
+  EN
+}
+
+enum WorkerStatus {
+  ONBOARDING
+  PENDING_REVIEW
+  VERIFIED
+  REJECTED
+  SUSPENDED
+}
+
+enum Availability {
+  AVAILABLE
+  BUSY
+  OFFLINE
+}
+
+enum Trade {
+  ELECTRICIAN
+  PLUMBER
+  AC_TECHNICIAN
+  CARPENTER
+  MECHANIC
+  PAINTER
+}
+
+enum BookingStatus {
+  REQUESTED
+  NEGOTIATING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  DECLINED
+  EXPIRED
+}
+
+enum Party {
+  CUSTOMER
+  WORKER
+}
+
+enum OfferStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  SUPERSEDED
+}
+
+enum MsgType {
+  TEXT
+  VOICE
+  PRICE_OFFER
+  SYSTEM
+}
+
+enum MediaKind {
+  VOICE
+  PHOTO
+  WORK_PHOTO
+  CNIC_FRONT
+  CNIC_BACK
+  PROBLEM_PHOTO
+}
+
+enum ReviewStatus {
+  PUBLISHED
+  HIDDEN
+}
+
+model User {
+  id        String           @id @default(cuid())
+  phone     String           @unique // normalised 923XXXXXXXXX
+  role      Role
+  name      String?
+  lang      Lang             @default(EN)
+  isActive  Boolean          @default(true)
+  createdAt DateTime         @default(now())
+  worker    WorkerProfile?
+  customer  CustomerProfile?
+  refresh   RefreshToken[]
+}
+
+model OtpChallenge {
+  id         String    @id @default(cuid())
+  phone      String
+  codeHash   String // HMAC-SHA256(OTP_PEPPER, phone:code)
+  attempts   Int       @default(0)
+  expiresAt  DateTime
+  consumedAt DateTime?
+  ip         String?
+  createdAt  DateTime  @default(now())
+
+  @@index([phone, createdAt])
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+}
+
+model WorkerProfile {
+  id              String       @id @default(cuid())
+  userId          String       @unique
+  user            User         @relation(fields: [userId], references: [id])
+  status          WorkerStatus @default(ONBOARDING)
+  availability    Availability @default(OFFLINE)
+  activeBookingId String?      @unique // at most ONE active job (DB-enforced)
+  trade           Trade?
+  experienceYears Int?
+  areas           String[]
+  baseRate        Int?
+  workHours       String?
+  voiceTranscript String?
+  photoMediaId    String?
+  lat             Float?
+  lng             Float?
+  ratingAvg       Float        @default(0)
+  ratingCount     Int          @default(0)
+  jobsDone        Int          @default(0)
+  aiSummary       String?
+  rejectReason    String?
+  cnic            Cnic?
+  bookings        Booking[]    @relation("WorkerBookings")
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([status, availability, trade])
+}
+
+model Cnic {
+  id             String        @id @default(cuid())
+  workerId       String        @unique
+  worker         WorkerProfile @relation(fields: [workerId], references: [id])
+  numberEnc      String // AES-256-GCM
+  numberHmac     String        @unique // blocks the same CNIC on 2 accounts
+  last4          String
+  nameOnCard     String?
+  fatherName     String?
+  dob            DateTime?
+  expiry         DateTime?
+  frontMediaId   String
+  backMediaId    String
+  ocrConfidence  Float
+  nameMatchScore Float
+  checks         Json // {format, notExpired, adult, frontBackMatch, nameMatch, quality}
+  createdAt      DateTime      @default(now())
+}
+
+model CustomerProfile {
+  id       String    @id @default(cuid())
+  userId   String    @unique
+  user     User      @relation(fields: [userId], references: [id])
+  address  String?
+  area     String?
+  lat      Float?
+  lng      Float?
+  bookings Booking[]
+}
+
+model Booking {
+  id             String          @id @default(cuid())
+  code           String          @unique // RR-2048
+  customerId     String
+  customer       CustomerProfile @relation(fields: [customerId], references: [id])
+  workerId       String
+  worker         WorkerProfile   @relation("WorkerBookings", fields: [workerId], references: [id])
+  trade          Trade
+  problemText    String
+  problemVoiceId String?
+  problemPhotoId String?
+  urgency        String // NOW | TODAY | SCHEDULED
+  scheduledAt    DateTime?
+  address        String
+  area           String
+  lat            Float?
+  lng            Float?
+  aiPriceMin     Int?
+  aiPriceMax     Int?
+  agreedPrice    Int?
+  status         BookingStatus   @default(REQUESTED)
+  startCodeHash  String?
+  startAttempts  Int             @default(0)
+  startedAt      DateTime?
+  completedAt    DateTime?
+  cancelledBy    Party?
+  cancelReason   String?
+  messages       Message[]
+  offers         PriceOffer[]
+  review         Review?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([workerId, status])
+  @@index([customerId, status])
+}
+
+model PriceOffer {
+  id        String      @id @default(cuid())
+  bookingId String
+  booking   Booking     @relation(fields: [bookingId], references: [id])
+  by        Party
+  amount    Int
+  status    OfferStatus @default(PENDING)
+  createdAt DateTime    @default(now())
+}
+
+model Message {
+  id          String   @id @default(cuid())
+  bookingId   String
+  booking     Booking  @relation(fields: [bookingId], references: [id])
+  senderId    String? // null for SYSTEM
+  type        MsgType
+  text        String?
+  audioId     String?
+  transcript  String?
+  translation String?
+  lang        Lang?
+  offerId     String?
+  createdAt   DateTime @default(now())
+
+  @@index([bookingId, createdAt])
+}
+
+model Review {
+  id         String       @id @default(cuid())
+  bookingId  String       @unique
+  booking    Booking      @relation(fields: [bookingId], references: [id])
+  customerId String
+  workerId   String
+  overall    Int
+  quality    Int
+  onTime     Int
+  fairPrice  Int
+  behaviour  Int
+  tags       String[]
+  text       String?
+  voiceId    String?
+  transcript String?
+  flagged    Boolean      @default(false)
+  flagReason String?
+  status     ReviewStatus @default(PUBLISHED)
+  createdAt  DateTime     @default(now())
+}
+
+model Media {
+  id        String    @id @default(cuid())
+  ownerId   String
+  kind      MediaKind
+  mime      String
+  size      Int
+  data      Bytes // demo: stored in Postgres (no external bucket needed)
+  createdAt DateTime  @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String
+  action    String
+  entity    String
+  entityId  String
+  meta      Json?
+  createdAt DateTime @default(now())
+}
