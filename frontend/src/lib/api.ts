@@ -94,3 +94,20 @@ export const SECTORS = ["G-8", "G-9", "G-10", "G-11", "F-7", "F-8", "F-10", "F-1
 export const rs = (n?: number | null) => (n == null ? "—" : `Rs ${n.toLocaleString("en-PK")}`);
 export const initials = (name?: string | null) =>
   (name || "?").split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
+
+/** Downscale a camera photo before upload (phones produce 4000px / 5-10 MB images). */
+export async function shrinkImage(file: File, maxDim = 2000, quality = 0.9): Promise<File> {
+  if (!file.type.startsWith("image/")) return file;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", quality));
+    return blob ? new File([blob], file.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" }) : file;
+  } catch {
+    return file;
+  }
+}

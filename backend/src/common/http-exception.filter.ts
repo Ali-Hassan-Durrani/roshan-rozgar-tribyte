@@ -21,7 +21,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
         status === 401 ? 'UNAUTHORIZED' : status === 403 ? 'FORBIDDEN' : status === 404 ? 'NOT_FOUND' : 'BAD_REQUEST';
       return res.status(status).json({ error: { code, message } });
     }
-    this.log.error((ex as Error)?.message);
+    const req = host.switchToHttp().getRequest();
+    this.log.error(`${req.method} ${req.path}: ${(ex as Error)?.stack ?? ex}`);
     return res
       .status(HttpStatus.INTERNAL_SERVER_ERROR)
       .json({ error: { code: 'INTERNAL', message: 'Something went wrong' } });

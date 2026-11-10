@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Prisma, WorkerProfile } from '@prisma/client';
 import { AiClient } from '../ai/ai-client.service';
 import { encrypt, hmac, maskPhone } from '../common/crypto';
@@ -24,11 +24,18 @@ function nameScore(a = '', b = '') {
 
 const parseDate = (s?: string) => {
   const m = s?.match(/(\d{2})[.\/-](\d{2})[.\/-](\d{4})/);
-  return m ? new Date(`${m[3]}-${m[2]}-${m[1]}T00:00:00Z`) : undefined;
+  if (!m) return undefined;
+  const [day, month, year] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const d = new Date(Date.UTC(year, month - 1, day));
+  // OCR misreads like 31.02.1990 or 14.13.1990 count as "unreadable", never as a crash.
+  const valid = year >= 1900 && year <= 2100 && d.getUTCMonth() === month - 1 && d.getUTCDate() === day;
+  return valid ? d : undefined;
 };
 
 @Injectable()
 export class WorkersService {
+  private log = new Logger('Workers');
+
   constructor(
     private prisma: PrismaService,
     private ai: AiClient,
@@ -136,29 +143,38 @@ export class WorkersService {
     const ok = checks.format && checks.unique && checks.notExpired && checks.adult;
     if (!ok) return { ok, checks, masked };
 
-    const [f, b] = await Promise.all(
-      [
-        [front, 'CNIC_FRONT'],
-        [back, 'CNIC_BACK'],
-      ].map(async ([file, kind]: any) =>
-        this.prisma.media.create({ data: { ownerId: userId, kind, ...(await cleanImage(file.buffer)) } }),
-      ),
-    );
-    const data = {
-      numberEnc: encrypt(process.env.CNIC_ENC_KEY!, number!),
-      numberHmac,
-      last4: number!.slice(-4),
-      nameOnCard: ocr.name,
-      fatherName: ocr.fatherName,
-      dob,
-      expiry,
-      frontMediaId: f.id,
-      backMediaId: b.id,
-      ocrConfidence: ocr.confidence,
-      nameMatchScore: score,
-      checks,
-    };
-    await this.prisma.cnic.upsert({ where: { workerId: w.id }, create: { workerId: w.id, ...data }, update: data });
+    try {
+      const [f, b] = await Promise.all(
+        [
+          [front, 'CNIC_FRONT'],
+          [back, 'CNIC_BACK'],
+        ].map(async ([file, kind]: any) =>
+          this.prisma.media.create({ data: { ownerId: userId, kind, ...(await cleanImage(file.buffer)) } }),
+        ),
+      );
+      const data = {
+        numberEnc: encrypt(process.env.CNIC_ENC_KEY!, number!),
+        numberHmac,
+        last4: number!.slice(-4),
+        nameOnCard: ocr.name?.slice(0, 80) ?? null,
+        fatherName: ocr.fatherName?.slice(0, 80) ?? null,
+        dob,
+        expiry,
+        frontMediaId: f.id,
+        backMediaId: b.id,
+        ocrConfidence: Number(ocr.confidence) || 0,
+        nameMatchScore: score,
+        checks,
+      };
+      await this.prisma.cnic.upsert({ where: { workerId: w.id }, create: { workerId: w.id, ...data }, update: data });
+    } catch (e) {
+      // Never log the CNIC values themselves.
+      this.log.error(`CNIC save failed for worker ${w.id}: ${(e as Error).name} ${(e as Error).message.split('\n').slice(-2).join(' ')}`);
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+        return { ok: false, checks: { ...checks, unique: false }, masked };
+      }
+      throw conflict('CNIC_SAVE_FAILED', 'Could not save the card. Please try again.');
+    }
     return { ok, checks, masked };
   }
 

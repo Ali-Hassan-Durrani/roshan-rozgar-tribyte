@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { WorkerShell } from "@/components/shell";
 import { Button, Card, cx, DemoTag, ErrorNote, ListenButton, MicRecorder, PageFade, Skeleton } from "@/components/ui";
 import { VoiceAgent } from "@/components/voice-agent";
-import { mediaUrl, post, put, SECTORS, TRADES, useApi } from "@/lib/api";
+import { mediaUrl, post, put, SECTORS, shrinkImage, TRADES, useApi } from "@/lib/api";
 import { T, useLang } from "@/lib/i18n";
 import { Line, transcriptText, VAPI_WORKER, vapiEnabled } from "@/lib/vapi";
 
@@ -241,7 +241,7 @@ function PhotoStep({ me, onSaved }: { me: any; onSaved: () => void }) {
   const upload = async (path: string, f?: File) => {
     if (!f) return;
     const fd = new FormData();
-    fd.append("file", f);
+    fd.append("file", await shrinkImage(f));
     try {
       await post(path, fd);
       onSaved();
@@ -283,8 +283,8 @@ function CnicStep({ me, onSaved }: { me: any; onSaved: () => void }) {
     setErr(undefined);
     try {
       const fd = new FormData();
-      fd.append("front", front);
-      fd.append("back", back);
+      fd.append("front", await shrinkImage(front));
+      fd.append("back", await shrinkImage(back));
       const r = await post("/workers/me/cnic", fd);
       setRes(r);
       if (r.ok) onSaved();

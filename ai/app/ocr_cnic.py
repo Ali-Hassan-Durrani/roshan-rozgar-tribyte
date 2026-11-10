@@ -23,19 +23,44 @@ def _decode(data: bytes):
     return img
 
 
-def _prep(img):
+TARGET_WIDTH = 1800  # normalise phone photos (4000px) and small scans alike; keeps OCR ~2-4 s
+
+
+def _variants(img):
+    """Grayscale first (fast, works on most photos), then stronger clean-ups for patterned or uneven cards."""
     g = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    g = cv2.resize(g, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
-    g = cv2.bilateralFilter(g, 9, 75, 75)
-    return cv2.adaptiveThreshold(g, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 31, 11)
+    scale = TARGET_WIDTH / g.shape[1]
+    g = cv2.resize(g, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA if scale < 1 else cv2.INTER_CUBIC)
+    yield g
+    yield cv2.threshold(cv2.GaussianBlur(g, (3, 3), 0), 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+    yield cv2.adaptiveThreshold(cv2.bilateralFilter(g, 9, 75, 75), 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 31, 11)
 
 
 def _ocr(img):
-    data = pytesseract.image_to_data(_prep(img), lang="eng", output_type=pytesseract.Output.DICT)
-    words = [w for w, c in zip(data["text"], data["conf"]) if w.strip() and float(c) > 0]
-    confs = [float(c) for w, c in zip(data["text"], data["conf"]) if w.strip() and float(c) > 0]
-    text = pytesseract.image_to_string(_prep(img), lang="eng")
-    return text, (sum(confs) / len(confs) if confs else 0.0), words
+    """Best of up to 3 passes: stops at the first one that finds a CNIC number."""
+    best = ("", 0.0, [])
+    for prepped in _variants(img):
+        text, conf, words = _ocr_pass(prepped)
+        if _cnic(text):
+            return text, conf, words
+        if conf > best[1]:
+            best = (text, conf, words)
+    return best
+
+
+def _ocr_pass(prepped):
+    """One Tesseract pass: words + confidences, with lines rebuilt from Tesseract's layout numbers."""
+    data = pytesseract.image_to_data(prepped, lang="eng", output_type=pytesseract.Output.DICT)
+    lines: dict[tuple, list[str]] = {}
+    confs = []
+    for i, w in enumerate(data["text"]):
+        c = float(data["conf"][i])
+        if not w.strip() or c < 0:
+            continue
+        confs.append(c)
+        lines.setdefault((data["block_num"][i], data["par_num"][i], data["line_num"][i]), []).append(w)
+    text = "\n".join(" ".join(ws) for ws in lines.values())
+    return text, (sum(confs) / len(confs) if confs else 0.0), [w for ws in lines.values() for w in ws]
 
 
 def _cnic(text: str):
