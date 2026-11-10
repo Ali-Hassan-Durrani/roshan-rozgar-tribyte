@@ -13,12 +13,12 @@ export const DEFAULT_PRICE: Record<Trade, [number, number]> = {
 };
 
 const KEYWORDS: [Trade, string[]][] = [
-  ['AC_TECHNICIAN', ['ac', 'a/c', 'air condition', 'thanda', 'cooling', 'gas', 'split', 'inverter', 'اے سی', 'ٹھنڈ', 'گیس']],
-  ['PLUMBER', ['nalka', 'leak', 'paani', 'pani', 'pipe', 'tap', 'drain', 'flush', 'geyser', 'tanki', 'water', 'نلکا', 'پانی', 'پائپ', 'لیک']],
-  ['ELECTRICIAN', ['bijli', 'switch', 'pankha', 'fan', 'wire', 'light', 'socket', 'breaker', 'ups', 'short', 'بجلی', 'پنکھا', 'سوئچ', 'تار']],
-  ['CARPENTER', ['door', 'darwaza', 'lakri', 'wood', 'cupboard', 'almari', 'furniture', 'table', 'hinge', 'دروازہ', 'لکڑی', 'الماری']],
-  ['MECHANIC', ['car', 'gaari', 'gari', 'bike', 'engine', 'motor', 'tyre', 'battery', 'گاڑی', 'انجن', 'موٹر']],
-  ['PAINTER', ['paint', 'rang', 'color', 'colour', 'wall', 'deewar', 'diwar', 'رنگ', 'دیوار', 'پینٹ']],
+  ['AC_TECHNICIAN', ['ac technician', 'ac', 'a/c', 'air condition', 'thanda', 'cooling', 'gas', 'split', 'inverter', 'اے سی', 'ٹھنڈ', 'گیس']],
+  ['PLUMBER', ['plumber', 'nalka', 'leak', 'paani', 'pani', 'pipe', 'tap', 'drain', 'flush', 'geyser', 'tanki', 'water', 'نلکا', 'پانی', 'پائپ', 'لیک']],
+  ['ELECTRICIAN', ['electrician', 'bijli', 'switch', 'pankha', 'fan', 'wire', 'light', 'socket', 'breaker', 'ups', 'short', 'بجلی', 'پنکھا', 'سوئچ', 'تار']],
+  ['CARPENTER', ['carpenter', 'door', 'darwaza', 'lakri', 'wood', 'cupboard', 'almari', 'furniture', 'table', 'hinge', 'دروازہ', 'لکڑی', 'الماری']],
+  ['MECHANIC', ['mechanic', 'car', 'gaari', 'gari', 'bike', 'engine', 'motor', 'tyre', 'battery', 'گاڑی', 'انجن', 'موٹر']],
+  ['PAINTER', ['painter', 'paint', 'rang', 'color', 'colour', 'wall', 'deewar', 'diwar', 'رنگ', 'دیوار', 'پینٹ']],
 ];
 
 export function keywordDiagnose(text: string) {

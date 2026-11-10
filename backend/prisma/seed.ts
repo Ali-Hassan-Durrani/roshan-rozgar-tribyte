@@ -91,7 +91,7 @@ async function main() {
 
   await prisma.user.create({ data: { phone: '923000000003', role: 'ADMIN', name: 'Admin' } });
 
-  const customers = [];
+  const customers: any[] = [];
   for (const [phone, name, address, area] of CUSTOMERS) {
     const [lat, lng] = SECTORS[area];
     const u = await prisma.user.create({
@@ -101,7 +101,7 @@ async function main() {
     customers.push(u.customer!);
   }
 
-  const workers = [];
+  const workers: any[] = [];
   for (const [i, [name, trade, years, rate, rating, sector, availability, status]] of WORKERS.entries()) {
     const [lat, lng] = SECTORS[sector];
     // Demo worker 03000000002 = Imran Khan.
