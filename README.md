@@ -65,15 +65,16 @@ npx prisma db seed          # reset + load demo data (safe to re-run before a de
 | 03000000002 | Worker — Imran Khan, Electrician (verified, available) |
 | 03000000003 | Admin |
 
-Any other number works too: in `OTP_MODE=demo` the code is shown in a "Demo OTP" banner instead of being sent by SMS.
+Any other number gets a real SMS through **SimGate** (`OTP_MODE=simgate`). If the SMS fails while `DEMO_MODE=true`, the code is shown on screen so the demo can't break. With `OTP_MODE=demo`, no SMS is sent and the code is always shown in a "Demo OTP" banner.
 
 ## Seeded and mocked (labelled "Demo" in the UI)
 - **Seeded:** 1 admin, 3 customers, 20 workers across 6 trades in Islamabad/Rawalpindi (2 busy, 2 pending approval), ~85 completed bookings (fair-price history), ~60 reviews, 3 burst-flagged reviews, 1 abusive voice review, 1 over-priced booking.
-- **OTP:** demo mode shows the code on screen; real SMS via SendPK is wired (`OTP_MODE=sendpk`).
+- **OTP:** real SMS via SimGate (an Android phone acting as an SMS gateway); SendPK is supported as an alternative. Judge numbers use the fixed code 1234.
 - **CNIC:** OCR runs for real (Tesseract), but there's no NADRA check.
-- **Maps:** a stylised map; distances are real (haversine from sector centres).
+- **Maps:** Mapbox (streets). Worker and customer positions are seeded sector centres plus a small offset, not live GPS; distances are haversine.
 - **Payments:** out of scope (cash on completion).
-- **AI without keys:** diagnosis, profile extraction, moderation and review summaries use rule-based fallbacks. Speech (STT/TTS) needs an ElevenLabs key. Without one, read-aloud falls back to the browser's speech synthesis, and typing still works everywhere.
+- **AI services:** Vapi runs the voice agents (worker onboarding in Urdu, customer booking). ElevenLabs does speech-to-text (Scribe) and read-aloud (multilingual TTS). Gemini (`gemini-3.1-flash-lite`) does profile extraction, diagnosis, translation, review summaries and moderation. Every AI call has a rule-based fallback, so the app still works if a provider is down.
+- **Languages:** EN / اردو toggle on every customer and worker screen (saved per user; workers default to Urdu, RTL + Nastaliq). The admin console is English only.
 
 ## Security
 Deny-by-default role guard on every route; CSRF header and SameSite cookies on a same-origin proxy; rotating hashed refresh tokens in httpOnly cookies; OTP is HMAC-hashed, single-use, rate-limited and capped at 5 attempts; DTO validation with whitelisting; uploads are checked by magic bytes and size-capped; CNIC numbers are AES-256-GCM encrypted with an HMAC uniqueness check; CNIC images are visible only to their owner and admins, and every admin view is audited; the AI service requires an internal key; the Vapi webhook requires a shared secret plus a signed voice token; booking confirmation is one serializable transaction (worker BUSY + unique `activeBookingId`), so double-booking is impossible.

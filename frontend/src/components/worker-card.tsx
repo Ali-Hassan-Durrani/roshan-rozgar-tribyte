@@ -3,6 +3,7 @@
 import { Clock, MapPin, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { rs, tradeName } from "@/lib/api";
+import { T } from "@/lib/i18n";
 import { Avatar, Badge, Stars, Verified, cx } from "./ui";
 
 export type WorkerCardData = {
@@ -19,6 +20,8 @@ export type WorkerCardData = {
   distanceKm?: number;
   etaMin?: number;
   areas?: string[];
+  lat?: number | null;
+  lng?: number | null;
 };
 
 export function WorkerCard({ w, onRequest }: { w: WorkerCardData; onRequest?: (w: WorkerCardData) => void }) {
@@ -50,18 +53,18 @@ export function WorkerCard({ w, onRequest }: { w: WorkerCardData; onRequest?: (w
         </span>
       </div>
       <div className="flex flex-col items-end justify-between gap-2">
-        {busy ? <Badge tone="busy" dot>Busy</Badge> : <Badge dot>Available</Badge>}
+        {busy ? <Badge tone="busy" dot><T en="Busy" ur="مصروف" /></Badge> : <Badge dot><T en="Available" ur="دستیاب" /></Badge>}
         <div className="text-right">
           <p className="text-xl font-extrabold">{rs(w.baseRate)}</p>
-          <p className="text-xs text-ink-3">starting</p>
+          <p className="text-xs text-ink-3"><T en="starting" ur="سے شروع" /></p>
         </div>
         <div className="flex gap-2">
           <Link href={`/c/workers/${w.id}`} className="rounded-xl border border-line px-3 py-2 text-sm font-bold">
-            View
+            <T en="View" ur="دیکھیں" />
           </Link>
           {onRequest && (
             <button disabled={busy} onClick={() => onRequest(w)} className="rounded-xl bg-brand px-3 py-2 text-sm font-bold text-white disabled:opacity-40">
-              Request
+              <T en="Request" ur="درخواست" />
             </button>
           )}
         </div>

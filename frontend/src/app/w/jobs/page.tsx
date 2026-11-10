@@ -4,13 +4,14 @@ import Link from "next/link";
 import { WorkerShell } from "@/components/shell";
 import { Badge, PageFade, Skeleton } from "@/components/ui";
 import { rs, useApi } from "@/lib/api";
+import { T } from "@/lib/i18n";
 
 export default function Jobs() {
   const { data } = useApi<any[]>("/bookings", 5000);
   return (
     <WorkerShell>
       <PageFade>
-        <h1 className="urdu text-3xl font-bold">میرے کام</h1>
+        <h1 className="text-3xl font-bold"><T en="My jobs" ur="میرے کام" /></h1>
         <div className="mt-5 space-y-3">
           {!data && <Skeleton className="h-24" />}
           {data?.map((b) => (

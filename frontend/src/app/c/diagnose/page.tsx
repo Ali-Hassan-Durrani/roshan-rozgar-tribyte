@@ -8,6 +8,7 @@ import { Suspense, useEffect, useState } from "react";
 import { CustomerPage } from "@/components/shell";
 import { Badge, Card, ErrorNote, PageFade, TradeIcon } from "@/components/ui";
 import { post, rs, TRADES } from "@/lib/api";
+import { T } from "@/lib/i18n";
 
 type Diagnosis = { trade: string; issue: string; confidence: number; priceMin: number; priceMax: number; basis: string };
 
@@ -30,13 +31,13 @@ function Diagnose() {
 
   return (
     <PageFade className="mx-auto max-w-2xl">
-      <p className="text-sm font-semibold text-ink-2">You said</p>
+      <p className="text-sm font-semibold text-ink-2"><T en="You said" ur="آپ نے کہا" /></p>
       <h1 className="mt-1 text-2xl font-extrabold">“{q}”</h1>
       <ErrorNote error={err} />
       {!d && !err && (
         <Card className="relative mt-6 overflow-hidden">
           <motion.div className="absolute inset-x-0 h-0.5 bg-ai" animate={{ top: ["0%", "100%", "0%"] }} transition={{ duration: 2, repeat: Infinity }} />
-          <p className="flex items-center gap-2 font-bold text-ai"><Sparkles className="h-5 w-5" /> AI is analysing your problem…</p>
+          <p className="flex items-center gap-2 font-bold text-ai"><Sparkles className="h-5 w-5" /> <T en="AI is analysing your problem…" ur="AI آپ کا مسئلہ سمجھ رہی ہے…" /></p>
           {["Understanding the problem", "Matching the right trade", "Checking fair prices nearby"].map((s, i) => (
             <p key={s} className="mt-3 flex items-center gap-2 text-sm">
               <span className={`grid h-5 w-5 place-items-center rounded-full ${step > i ? "bg-teal text-white" : "bg-line"}`}>{step > i && <Check className="h-3 w-3" />}</span>
@@ -56,11 +57,11 @@ function Diagnose() {
               </div>
             </div>
             <div className="mt-5 rounded-2xl bg-ai-50 p-4">
-              <p className="text-sm font-semibold text-ai">Fair price for this job</p>
+              <p className="text-sm font-semibold text-ai"><T en="Fair price for this job" ur="اس کام کی مناسب قیمت" /></p>
               <p className="mt-1 text-3xl font-extrabold">{rs(d.priceMin)} – {rs(d.priceMax)}</p>
               <p className="mt-1 text-xs text-ink-2">Based on {d.basis}. Agree on the final price in chat.</p>
             </div>
-            <p className="mt-4 text-sm text-ink-2">🔊 The worker will hear your request read aloud in Urdu.</p>
+            <p className="mt-4 text-sm text-ink-2"><T en="🔊 The worker will hear your request read aloud in Urdu." ur="🔊 کاریگر آپ کی درخواست اردو میں سنے گا۔" /></p>
             <Link href={`/c/workers?trade=${d.trade}&q=${encodeURIComponent(q)}`} className="mt-5 flex h-[52px] items-center justify-center gap-2 rounded-2xl bg-brand font-bold text-white">
               See available {trade.en}s <ArrowRight className="h-4 w-4" />
             </Link>

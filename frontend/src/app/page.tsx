@@ -7,9 +7,11 @@ import { useState } from "react";
 import { RequestModal } from "@/components/request-modal";
 import { CustomerNav, useMe } from "@/components/shell";
 import { Avatar, Badge, Card, MicRecorder, Modal, PageFade, Skeleton, TradeIcon, TruckStrip } from "@/components/ui";
+import { MapView, Pin } from "@/components/map-view";
 import { VoiceAgent } from "@/components/voice-agent";
 import { WorkerCard, WorkerCardData } from "@/components/worker-card";
 import { post, TRADES, useApi } from "@/lib/api";
+import { T } from "@/lib/i18n";
 import { userText, VAPI_CUSTOMER, vapiEnabled } from "@/lib/vapi";
 
 const TRIES = ["AC thanda nahi kar raha", "Switch se chingari", "Darwaza band nahi hota"];
@@ -21,7 +23,7 @@ export default function Home() {
   const [busy, setBusy] = useState(false);
   const [talk, setTalk] = useState(false);
   const [req, setReq] = useState<WorkerCardData | null>(null);
-  const { data } = useApi<{ workers: WorkerCardData[] }>("/workers/search?radiusKm=50", 10_000);
+  const { data } = useApi<{ workers: WorkerCardData[]; center: { lat: number; lng: number } }>("/workers/search?radiusKm=50", 10_000);
   const workers = data?.workers ?? [];
   const available = workers.filter((w) => w.availability === "AVAILABLE");
 
@@ -56,10 +58,10 @@ export default function Home() {
               <span className="h-2 w-2 rounded-full bg-ink" /> Live in Islamabad &amp; Rawalpindi · {available.length} workers online
             </span>
             <h1 className="mt-5 text-[34px] font-extrabold leading-[1.08] tracking-[-0.02em] md:text-[52px]">
-              Something broken? Get a trusted worker at your door — fast.
+              <T en="Something broken? Get a trusted worker at your door — fast." ur="کچھ خراب ہے؟ قابلِ بھروسہ کاریگر فوراً آپ کے دروازے پر۔" />
             </h1>
             <p className="mt-5 max-w-xl text-brand-100 md:text-lg">
-              Describe it in English or Roman Urdu, speak it, or snap a photo. Our AI finds the right trade, a fair price and who is free right now.
+              <T en="Describe it in English or Roman Urdu, speak it, or snap a photo. Our AI finds the right trade, a fair price and who is free right now." ur="انگریزی یا رومن اردو میں لکھیں، بول کر بتائیں یا تصویر لیں۔ ہماری AI صحیح کاریگر، مناسب قیمت اور ابھی فارغ کاریگر ڈھونڈتی ہے۔" />
             </p>
             <form onSubmit={(e) => { e.preventDefault(); find(); }} className="mt-7 flex items-center gap-2 rounded-2xl bg-white p-2 text-ink md:max-w-[640px]">
               <Search className="ml-3 h-5 w-5 shrink-0 text-ink-3" />
@@ -83,7 +85,7 @@ export default function Home() {
               </button>
             </form>
             <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
-              <span className="text-brand-100">Try:</span>
+              <span className="text-brand-100"><T en="Try:" ur="آزمائیں:" /></span>
               {TRIES.map((t) => (
                 <button key={t} onClick={() => { setQ(t); find(t); }} className="rounded-full border border-white/60 px-3 py-1.5 font-medium hover:bg-white/10">
                   {t}
@@ -103,15 +105,15 @@ export default function Home() {
               ))}
             </div>
           </PageFade>
-          <MiniMap workers={workers.slice(0, 5)} />
+          <MiniMap workers={workers.slice(0, 8)} center={data?.center} />
         </div>
         <TruckStrip />
       </section>
 
       <main className="mx-auto max-w-[1440px] px-4 py-12 md:px-16">
         <div className="flex items-end justify-between">
-          <h2 className="text-2xl font-extrabold md:text-[28px]">What do you need fixed?</h2>
-          <Link href="/c/workers" className="text-sm font-bold">All services →</Link>
+          <h2 className="text-2xl font-extrabold md:text-[28px]"><T en="What do you need fixed?" ur="کیا ٹھیک کروانا ہے؟" /></h2>
+          <Link href="/c/workers" className="text-sm font-bold"><T en="All services →" ur="تمام خدمات ←" /></Link>
         </div>
         <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-6">
           {TRADES.map((t) => (
@@ -128,7 +130,7 @@ export default function Home() {
         </div>
 
         <div className="mt-14 flex items-end justify-between">
-          <h2 className="text-2xl font-extrabold md:text-[28px]">Available near you · G-10, Islamabad</h2>
+          <h2 className="text-2xl font-extrabold md:text-[28px]"><T en="Available near you · G-10, Islamabad" ur="آپ کے قریب دستیاب · G-10، اسلام آباد" /></h2>
           <Link href="/c/workers" className="text-sm font-bold">See all {available.length} →</Link>
         </div>
         <div className="mt-6 grid gap-5 md:grid-cols-2">
@@ -151,7 +153,7 @@ export default function Home() {
         </div>
         {!me && (
           <p className="mt-10 text-center text-sm text-ink-2">
-            Are you a skilled worker? <Link href="/login?role=WORKER" className="font-bold text-brand underline">Join as a worker →</Link>
+            <T en="Are you a skilled worker?" ur="کیا آپ ہنر مند کاریگر ہیں؟" /> <Link href="/login?role=WORKER" className="font-bold text-brand underline"><T en="Join as a worker →" ur="کاریگر کے طور پر شامل ہوں ←" /></Link>
           </p>
         )}
       </main>
@@ -182,19 +184,25 @@ export default function Home() {
   );
 }
 
-function MiniMap({ workers }: { workers: WorkerCardData[] }) {
-  const pos = [[18, 22], [62, 28], [12, 58], [58, 68], [80, 50]];
+function MiniMap({ workers, center }: { workers: WorkerCardData[]; center?: { lat: number; lng: number } }) {
+  const router = useRouter();
   const top = workers.find((w) => w.availability === "AVAILABLE");
+  const pins: Pin[] = [
+    ...(center ? [{ id: "you", lat: center.lat, lng: center.lng, label: "You", tone: "you" as const }] : []),
+    ...workers
+      .filter((w) => w.lat != null && w.lng != null)
+      .map((w) => ({
+        id: w.id,
+        lat: w.lat!,
+        lng: w.lng!,
+        label: w.availability === "AVAILABLE" ? `${w.name.split(" ")[0]} · ${w.distanceKm} km` : "Busy",
+        tone: (w.availability === "AVAILABLE" ? "free" : "busy") as Pin["tone"],
+        onClick: () => router.push(`/c/workers/${w.id}`),
+      })),
+  ];
   return (
-    <div className="relative hidden h-[420px] overflow-hidden rounded-3xl bg-[#2A2F66] md:block">
-      {[[0, 25], [0, 52], [0, 78]].map(([, y]) => <div key={y} className="absolute inset-x-0 h-2 bg-white/90" style={{ top: `${y}%` }} />)}
-      {[30, 70].map((x) => <div key={x} className="absolute inset-y-0 w-2 bg-white/90" style={{ left: `${x}%` }} />)}
-      <span className="absolute left-[44%] top-[38%] flex items-center gap-1.5 rounded-full bg-info px-3 py-1.5 text-xs font-bold">You</span>
-      {workers.map((w, i) => (
-        <span key={w.id} className={`absolute flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${w.availability === "AVAILABLE" ? "bg-ink" : "bg-busy"}`} style={{ left: `${pos[i][0]}%`, top: `${pos[i][1]}%` }}>
-          {w.availability === "AVAILABLE" ? `${w.name.split(" ")[0]} · ${w.distanceKm} km` : "Busy"}
-        </span>
-      ))}
+    <div className="relative hidden md:block">
+      <MapView pins={pins} center={center ? [center.lat, center.lng] : undefined} />
       {top && (
         <div className="absolute bottom-4 left-4 right-24 flex items-center gap-3 rounded-2xl bg-white p-4 text-ink shadow-modal">
           <Avatar name={top.name} photoId={top.photoMediaId} />
@@ -202,7 +210,7 @@ function MiniMap({ workers }: { workers: WorkerCardData[] }) {
             <p className="font-bold">{top.name}</p>
             <p className="text-xs text-ink-2">{top.distanceKm} km · {top.etaMin} min</p>
           </div>
-          <Badge dot>Available</Badge>
+          <Badge dot><T en="Available" ur="دستیاب" /></Badge>
         </div>
       )}
     </div>

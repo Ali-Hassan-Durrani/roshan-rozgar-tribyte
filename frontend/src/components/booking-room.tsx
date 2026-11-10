@@ -3,6 +3,7 @@
 import { Check, Lock, Send, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ApiError, post, rs, useApi } from "@/lib/api";
+import { MapView, Pin } from "./map-view";
 import { Button, cx, ErrorNote, ListenButton, MicRecorder, VoicePlayer } from "./ui";
 
 export type BookingView = {
@@ -20,7 +21,9 @@ export type BookingView = {
   agreedPrice?: number;
   startCode?: string;
   myParty: "CUSTOMER" | "WORKER" | null;
-  worker: { id: string; name: string; trade: string; ratingAvg: number; photoMediaId?: string; availability: string; phoneMasked?: string };
+  lat?: number | null;
+  lng?: number | null;
+  worker: { id: string; name: string; trade: string; ratingAvg: number; photoMediaId?: string; availability: string; phoneMasked?: string; lat?: number | null; lng?: number | null };
   customer: { id: string; name: string };
   offers: { id: string; by: "CUSTOMER" | "WORKER"; amount: number; status: string }[];
   review?: { overall: number } | null;
@@ -191,4 +194,15 @@ export function Stepper({ status, urdu }: { status: string; urdu?: boolean }) {
       ))}
     </div>
   );
+}
+
+/** Job location + worker position (C6 / W8). */
+export function BookingMap({ b, className = "h-[260px]" }: { b: BookingView; className?: string }) {
+  const pins: Pin[] = [];
+  if (b.lat != null && b.lng != null) pins.push({ id: "job", lat: b.lat, lng: b.lng, label: `Job · ${b.area}`, tone: "job" });
+  if (b.worker.lat != null && b.worker.lng != null) {
+    pins.push({ id: "worker", lat: b.worker.lat, lng: b.worker.lng, label: b.worker.name.split(" ")[0], tone: "free" });
+  }
+  if (!pins.length) return null;
+  return <MapView pins={pins} className={className} />;
 }

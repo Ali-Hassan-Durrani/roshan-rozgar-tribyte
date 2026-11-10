@@ -5,10 +5,11 @@ import { MapPin, Phone, Sparkles, Star } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
-import { BookingRoom, BookingView, Stepper } from "@/components/booking-room";
+import { BookingMap, BookingRoom, BookingView, Stepper } from "@/components/booking-room";
 import { CustomerPage } from "@/components/shell";
 import { Avatar, Badge, Button, Card, cx, ErrorNote, MicRecorder, Modal, PageFade, Skeleton } from "@/components/ui";
 import { post, rs, tradeName, useApi } from "@/lib/api";
+import { T } from "@/lib/i18n";
 
 export default function BookingPage() {
   const { id } = useParams<{ id: string }>();
@@ -54,13 +55,14 @@ export default function BookingPage() {
               </Card>
             </motion.div>
           )}
+          {["CONFIRMED", "IN_PROGRESS"].includes(b.status) && <BookingMap b={b} />}
           <Card>
-            <h2 className="text-lg font-bold">Job summary</h2>
+            <h2 className="text-lg font-bold"><T en="Job summary" ur="کام کا خلاصہ" /></h2>
             <dl className="mt-3 space-y-3 text-sm">
-              <div><dt className="text-ink-3">Problem</dt><dd className="font-medium">{b.problemText}</dd></div>
-              <div><dt className="text-ink-3">Address</dt><dd className="flex items-center gap-1 font-medium"><MapPin className="h-4 w-4" /> {b.address}, {b.area}</dd></div>
-              <div><dt className="text-ink-3">When</dt><dd className="font-medium">{b.urgency === "NOW" ? "Right now" : b.urgency === "TODAY" ? "Today" : "Scheduled"}</dd></div>
-              {b.agreedPrice && <div><dt className="text-ink-3">Agreed price</dt><dd className="text-xl font-extrabold">{rs(b.agreedPrice)}</dd></div>}
+              <div><dt className="text-ink-3"><T en="Problem" ur="مسئلہ" /></dt><dd className="font-medium">{b.problemText}</dd></div>
+              <div><dt className="text-ink-3"><T en="Address" ur="پتہ" /></dt><dd className="flex items-center gap-1 font-medium"><MapPin className="h-4 w-4" /> {b.address}, {b.area}</dd></div>
+              <div><dt className="text-ink-3"><T en="When" ur="کب" /></dt><dd className="font-medium">{b.urgency === "NOW" ? "Right now" : b.urgency === "TODAY" ? "Today" : "Scheduled"}</dd></div>
+              {b.agreedPrice && <div><dt className="text-ink-3"><T en="Agreed price" ur="طے شدہ قیمت" /></dt><dd className="text-xl font-extrabold">{rs(b.agreedPrice)}</dd></div>}
             </dl>
             {b.aiPriceMin && (
               <div className="mt-4 rounded-2xl bg-ai-50 p-4">
@@ -70,12 +72,12 @@ export default function BookingPage() {
             )}
           </Card>
           {b.status === "COMPLETED" && !b.review && <ReviewCard id={b.id} name={b.worker.name} onDone={reload} />}
-          {b.review && <Card><p className="font-bold">Thanks for your review!</p><p className="text-sm text-ink-2">You rated {b.review.overall}★</p></Card>}
+          {b.review && <Card><p className="font-bold"><T en="Thanks for your review!" ur="ریویو کا شکریہ!" /></p><p className="text-sm text-ink-2">You rated {b.review.overall}★</p></Card>}
           {["REQUESTED", "NEGOTIATING", "CONFIRMED"].includes(b.status) && (
-            <Button kind="danger" className="w-full" onClick={() => setCancel(true)}>Cancel booking</Button>
+            <Button kind="danger" className="w-full" onClick={() => setCancel(true)}><T en="Cancel booking" ur="بکنگ منسوخ کریں" /></Button>
           )}
           {["EXPIRED", "DECLINED"].includes(b.status) && (
-            <Link href={`/c/workers?trade=${b.trade}`} className="flex h-12 items-center justify-center rounded-2xl bg-brand font-bold text-white">Pick another worker</Link>
+            <Link href={`/c/workers?trade=${b.trade}`} className="flex h-12 items-center justify-center rounded-2xl bg-brand font-bold text-white"><T en="Pick another worker" ur="کوئی اور کاریگر چنیں" /></Link>
           )}
         </div>
       </PageFade>
@@ -83,8 +85,8 @@ export default function BookingPage() {
         <p className="text-ink-2">{b.status === "CONFIRMED" ? `${b.worker.name} will be freed for other customers.` : "The worker will be told."}</p>
         <ErrorNote error={err} />
         <div className="mt-5 grid grid-cols-2 gap-3">
-          <Button kind="secondary" onClick={() => setCancel(false)}>Keep it</Button>
-          <Button kind="danger" onClick={doCancel}>Yes, cancel</Button>
+          <Button kind="secondary" onClick={() => setCancel(false)}><T en="Keep it" ur="رہنے دیں" /></Button>
+          <Button kind="danger" onClick={doCancel}><T en="Yes, cancel" ur="ہاں، منسوخ کریں" /></Button>
         </div>
       </Modal>
     </CustomerPage>
@@ -145,7 +147,7 @@ function ReviewCard({ id, name, onDone }: { id: string; name: string; onDone: ()
         <MicRecorder size={44} onDone={setVoiceId} /> {voiceId ? <Badge tone="ok">Voice review attached</Badge> : "Or speak your review"}
       </div>
       <ErrorNote error={err} />
-      <Button size="L" className="mt-4 w-full" loading={loading} onClick={submit}>Submit review</Button>
+      <Button size="L" className="mt-4 w-full" loading={loading} onClick={submit}><T en="Submit review" ur="ریویو بھیجیں" /></Button>
     </Card>
   );
 }

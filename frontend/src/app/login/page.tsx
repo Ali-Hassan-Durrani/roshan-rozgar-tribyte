@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { Button, Card, cx, DemoTag, ErrorNote, Logo, PageFade, TruckStrip } from "@/components/ui";
 import { post } from "@/lib/api";
+import { LangToggle, T, useLang } from "@/lib/i18n";
 
 const DEMO = [
   ["03000000001", "Customer · Sara"],
@@ -21,9 +22,11 @@ function Login() {
   const [code, setCode] = useState("");
   const [step, setStep] = useState<"phone" | "code">("phone");
   const [demoCode, setDemoCode] = useState<string>();
+  const [smsSent, setSmsSent] = useState(false);
+  const [smsFailed, setSmsFailed] = useState(false);
   const [err, setErr] = useState<string>();
   const [loading, setLoading] = useState(false);
-  const ur = role === "WORKER";
+  const { t } = useLang();
 
   const request = async (p = phone) => {
     setLoading(true);
@@ -31,6 +34,8 @@ function Login() {
     try {
       const r = await post("/auth/otp/request", { phone: p });
       setDemoCode(r.demoCode);
+      setSmsSent(!!r.sms);
+      setSmsFailed(!!r.smsFailed);
       if (r.demoCode) setCode(r.demoCode);
       setStep("code");
     } catch (e) {
@@ -68,10 +73,10 @@ function Login() {
       </div>
       <div className="flex items-center justify-center p-5">
         <PageFade className="w-full max-w-md">
-          <div className="mb-6 md:hidden"><Logo /></div>
+          <div className="mb-6 flex items-center justify-between"><span className="md:invisible"><Logo /></span><LangToggle /></div>
           <Card className="p-7">
-            <h2 className="text-2xl font-extrabold">{step === "phone" ? "Log in or sign up" : "Enter the 4-digit code"}</h2>
-            <p className="mt-1 text-sm text-ink-2">{step === "phone" ? "We'll text you a code. No passwords." : `Sent to ${phone}`}</p>
+            <h2 className="text-2xl font-extrabold">{step === "phone" ? <T en="Log in or sign up" ur="لاگ ان یا سائن اپ" /> : <T en="Enter the 4-digit code" ur="4 ہندسوں کا کوڈ درج کریں" />}</h2>
+            <p className="mt-1 text-sm text-ink-2">{step === "phone" ? <T en="We'll text you a code. No passwords." ur="ہم آپ کو کوڈ بھیجیں گے۔ کوئی پاس ورڈ نہیں۔" /> : smsSent ? <T en={`Code sent by SMS to ${phone}`} ur={`کوڈ ${phone} پر SMS کر دیا گیا`} /> : `${t("Sent to", "بھیجا گیا")} ${phone}`}</p>
 
             {step === "phone" && (
               <>
@@ -93,8 +98,8 @@ function Login() {
                   <input inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="300 1234567" className="h-14 flex-1 bg-transparent text-lg outline-none" />
                 </label>
                 <ErrorNote error={err} />
-                <Button size={ur ? "XL" : "L"} className="mt-4 w-full" loading={loading} onClick={() => request()}>
-                  {ur ? <span className="urdu">کوڈ بھیجیں</span> : "Send code"}
+                <Button size={role === "WORKER" ? "XL" : "L"} className="mt-4 w-full" loading={loading} onClick={() => request()}>
+                  <T en="Send code" ur="کوڈ بھیجیں" />
                 </Button>
                 <div className="mt-6 rounded-2xl bg-amber-50 p-4">
                   <p className="flex items-center gap-2 text-sm font-bold"><DemoTag /> Judge accounts (OTP 1234)</p>
@@ -113,7 +118,7 @@ function Login() {
               <>
                 {demoCode && (
                   <div className="mt-4 flex items-center gap-2 rounded-2xl bg-amber-50 p-3 text-sm">
-                    <DemoTag /> Demo OTP: <b className="tracking-widest">{demoCode}</b> <span className="text-ink-2">(auto-filled)</span>
+                    <DemoTag /> {smsFailed ? t("SMS failed — demo code:", "SMS نہیں گیا — ڈیمو کوڈ:") : "Demo OTP:"} <b className="tracking-widest">{demoCode}</b> <span className="text-ink-2">{t("(auto-filled)", "(خود بھر دیا)")}</span>
                   </div>
                 )}
                 <div className="mt-5 flex justify-center gap-3">
@@ -134,14 +139,14 @@ function Login() {
                   ))}
                 </div>
                 <ErrorNote error={err} />
-                <Button size={ur ? "XL" : "L"} className="mt-5 w-full" loading={loading} disabled={code.length !== 4} onClick={verify}>
-                  {ur ? <span className="urdu">تصدیق کریں</span> : "Verify & continue"}
+                <Button size={role === "WORKER" ? "XL" : "L"} className="mt-5 w-full" loading={loading} disabled={code.length !== 4} onClick={verify}>
+                  <T en="Verify & continue" ur="تصدیق کریں" />
                 </Button>
-                <button onClick={() => setStep("phone")} className="mt-3 w-full text-sm text-ink-2">Change number</button>
+                <button onClick={() => setStep("phone")} className="mt-3 w-full text-sm text-ink-2"><T en="Change number" ur="نمبر تبدیل کریں" /></button>
               </>
             )}
             <p className="mt-6 flex items-center gap-2 text-xs text-ink-3">
-              <ShieldCheck className="h-4 w-4" /> Real SMS via SendPK is wired; demo numbers skip SMS so the demo can&apos;t fail.
+              <ShieldCheck className="h-4 w-4" /> {t("Real SMS via SimGate. Judge demo numbers skip SMS so the demo can't fail.", "اصلی SMS کے ذریعے کوڈ۔ ڈیمو نمبرز پر SMS نہیں جاتا۔")}
             </p>
           </Card>
         </PageFade>

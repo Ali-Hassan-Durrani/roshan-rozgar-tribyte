@@ -7,6 +7,7 @@ import { RequestModal } from "@/components/request-modal";
 import { CustomerPage } from "@/components/shell";
 import { Avatar, Badge, Button, Card, PageFade, Skeleton, Stars, Verified, VoicePlayer } from "@/components/ui";
 import { mediaUrl, rs, tradeName, useApi } from "@/lib/api";
+import { T } from "@/lib/i18n";
 
 export default function WorkerProfile() {
   const { id } = useParams<{ id: string }>();
@@ -47,7 +48,7 @@ export default function WorkerProfile() {
             </Card>
           )}
           <Card>
-            <h2 className="text-lg font-bold">Ratings by aspect</h2>
+            <h2 className="text-lg font-bold"><T en="Ratings by aspect" ur="ریٹنگ تفصیل سے" /></h2>
             <div className="mt-4 space-y-3">
               {aspects.map(([label, v]) => (
                 <div key={label} className="flex items-center gap-3 text-sm">
@@ -62,7 +63,7 @@ export default function WorkerProfile() {
           </Card>
           {!!w.workPhotoIds.length && (
             <Card>
-              <h2 className="text-lg font-bold">Work photos</h2>
+              <h2 className="text-lg font-bold"><T en="Work photos" ur="کام کی تصاویر" /></h2>
               <div className="mt-3 grid grid-cols-3 gap-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 {w.workPhotoIds.map((p: string) => <img key={p} src={mediaUrl(p)} alt="" className="aspect-square rounded-2xl object-cover" />)}
@@ -70,7 +71,7 @@ export default function WorkerProfile() {
             </Card>
           )}
           <Card>
-            <h2 className="text-lg font-bold">Recent reviews</h2>
+            <h2 className="text-lg font-bold"><T en="Recent reviews" ur="حالیہ ریویوز" /></h2>
             <div className="mt-3 divide-y divide-line">
               {w.reviews.map((r: any) => (
                 <div key={r.id} className="py-4">
@@ -83,13 +84,13 @@ export default function WorkerProfile() {
                   <div className="mt-2 flex flex-wrap gap-1.5">{r.tags.map((t: string) => <Badge key={t}>{t}</Badge>)}</div>
                 </div>
               ))}
-              {!w.reviews.length && <p className="py-4 text-sm text-ink-2">No reviews yet.</p>}
+              {!w.reviews.length && <p className="py-4 text-sm text-ink-2"><T en="No reviews yet." ur="ابھی کوئی ریویو نہیں۔" /></p>}
             </div>
           </Card>
         </div>
         <div>
           <Card className="sticky top-24">
-            <p className="text-sm text-ink-2">Starting from</p>
+            <p className="text-sm text-ink-2"><T en="Starting from" ur="شروع" /></p>
             <p className="text-3xl font-extrabold">{rs(w.baseRate)}</p>
             <p className="mt-1 text-sm text-ink-2">{w.workHours}</p>
             <Button size="L" className="mt-5 w-full" disabled={busy} onClick={() => setOpen(true)}>

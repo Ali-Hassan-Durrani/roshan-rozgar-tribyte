@@ -15,6 +15,7 @@ services:
       - { key: ELEVENLABS_VOICE_ID_EN, sync: false }
       - { key: ELEVENLABS_TTS_MODEL, sync: false }
       - { key: LLM_API_KEY, sync: false }
+      - { key: LLM_MODEL, value: gemini-3.1-flash-lite }
       - { key: DEMO_MODE, value: "true" }
 
   - type: web
@@ -37,9 +38,10 @@ services:
       - { key: ADMIN_PHONES, sync: false }
       - { key: DEMO_MODE, value: "true" }
       - { key: DEMO_PHONES, sync: false }
-      - { key: OTP_MODE, value: demo }
-      - { key: SENDPK_API_KEY, sync: false }
-      - { key: SENDPK_SENDER, sync: false }
+      - { key: OTP_MODE, value: simgate }
+      - { key: SIMGATE_API_KEY, sync: false }
+      - { key: SIMGATE_DEVICE_ID, sync: false }
+      - { key: SIMGATE_URL, value: "https://api.simgate.app/v1/sms/send" }
       - { key: AI_SERVICE_URL, sync: false }
       - { key: AI_INTERNAL_KEY, sync: false }
       - { key: VAPI_WEBHOOK_SECRET, sync: false }
@@ -57,3 +59,4 @@ services:
       - { key: NEXT_PUBLIC_VAPI_PUBLIC_KEY, sync: false }
       - { key: NEXT_PUBLIC_VAPI_WORKER_ASSISTANT_ID, sync: false }
       - { key: NEXT_PUBLIC_VAPI_CUSTOMER_ASSISTANT_ID, sync: false }
+      - { key: NEXT_PUBLIC_MAPBOX_TOKEN, sync: false }

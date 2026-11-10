@@ -1,10 +1,11 @@
 "use client";
 
-import { Bell, Briefcase, CalendarCheck, Globe, Home, LayoutGrid, LogOut, MessageSquare, Search, Shield, Star, User, Users } from "lucide-react";
+import { Bell, Briefcase, CalendarCheck, Home, LayoutGrid, LogOut, MessageSquare, Search, Shield, Star, User, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ReactNode } from "react";
 import { post, useApi } from "@/lib/api";
+import { LangToggle, useDefaultLang, useLang } from "@/lib/i18n";
 import { Avatar, cx, Logo, TruckStrip } from "./ui";
 
 export type Me = {
@@ -30,10 +31,11 @@ export function CustomerNav() {
   const { data: me } = useMe();
   const path = usePathname();
   const router = useRouter();
+  const { t } = useLang();
   const links = [
-    ["/", "Home"],
-    ["/c/workers", "Find workers"],
-    ["/c/bookings", "My bookings"],
+    ["/", t("Home", "گھر")],
+    ["/c/workers", t("Find workers", "کاریگر تلاش کریں")],
+    ["/c/bookings", t("My bookings", "میری بکنگز")],
   ];
   return (
     <>
@@ -50,9 +52,8 @@ export function CustomerNav() {
             ))}
           </nav>
           <div className="flex items-center gap-3">
-            <span className="hidden items-center gap-2 rounded-full border border-line px-4 py-2 text-sm md:flex">
-              <Globe className="h-4 w-4" /> <b>EN</b> <span className="text-ink-3">|</span> <span className="urdu text-ink-2">اردو</span>
-            </span>
+            <LangToggle />
+
             <span className="hidden h-10 w-10 place-items-center rounded-full bg-amber-50 md:grid">
               <Bell className="h-5 w-5 text-ink-2" />
             </span>
@@ -64,7 +65,7 @@ export function CustomerNav() {
               </button>
             ) : (
               <Link href="/login" className="rounded-xl bg-brand px-4 py-2 text-sm font-bold text-white">
-                Log in
+                {t("Log in", "لاگ ان")}
               </Link>
             )}
           </div>
@@ -73,9 +74,9 @@ export function CustomerNav() {
       {/* Mobile tab bar */}
       <nav className="fixed inset-x-0 bottom-0 z-40 flex justify-around border-t border-line bg-white py-2 md:hidden">
         {[
-          ["/", "Home", Home],
-          ["/c/workers", "Search", Search],
-          ["/c/bookings", "Bookings", CalendarCheck],
+          ["/", t("Home", "گھر"), Home],
+          ["/c/workers", t("Search", "تلاش"), Search],
+          ["/c/bookings", t("Bookings", "بکنگز"), CalendarCheck],
         ].map(([href, label, I]: any) => (
           <Link key={href} href={href} className={cx("flex flex-col items-center gap-1 text-xs", path === href ? "font-bold text-brand" : "text-ink-3")}>
             <I className="h-5 w-5" /> {label}
@@ -98,13 +99,15 @@ export function CustomerPage({ children }: { children: ReactNode }) {
 export function WorkerShell({ children }: { children: ReactNode }) {
   const path = usePathname();
   const router = useRouter();
+  const { t, ur } = useLang();
+  useDefaultLang("ur");
   const items: [string, string, any][] = [
-    ["/w", "گھر", Home],
-    ["/w/jobs", "کام", Briefcase],
-    ["/w/onboarding", "پروفائل", User],
+    ["/w", t("Home", "گھر"), Home],
+    ["/w/jobs", t("Jobs", "کام"), Briefcase],
+    ["/w/onboarding", t("Profile", "پروفائل"), User],
   ];
   return (
-    <div dir="rtl" className="min-h-screen pb-24 md:flex md:pb-0">
+    <div dir={ur ? "rtl" : "ltr"} className="min-h-screen pb-24 md:flex md:pb-0">
       <aside className="hidden w-64 shrink-0 flex-col bg-brand text-white md:flex">
         <TruckStrip />
         <div className="p-6" dir="ltr">
@@ -112,19 +115,24 @@ export function WorkerShell({ children }: { children: ReactNode }) {
         </div>
         <nav className="flex flex-col gap-1 px-3">
           {items.map(([href, label, I]) => (
-            <Link key={href} href={href} className={cx("urdu flex min-h-16 items-center gap-3 rounded-2xl px-4 text-lg", path === href ? "bg-white/10 font-bold text-amber" : "text-brand-100")}>
+            <Link key={href} href={href} className={cx(ur && "urdu", "flex min-h-16 items-center gap-3 rounded-2xl px-4 text-lg", path === href ? "bg-white/10 font-bold text-amber" : "text-brand-100")}>
               <I className="h-6 w-6" /> {label}
             </Link>
           ))}
-          <button onClick={() => logout(router)} className="urdu flex min-h-16 items-center gap-3 rounded-2xl px-4 text-lg text-brand-100">
-            <LogOut className="h-6 w-6" /> لاگ آؤٹ
+          <button onClick={() => logout(router)} className={cx(ur && "urdu", "flex min-h-16 items-center gap-3 rounded-2xl px-4 text-lg text-brand-100")}>
+            <LogOut className="h-6 w-6" /> {t("Log out", "لاگ آؤٹ")}
           </button>
         </nav>
       </aside>
-      <main className="mx-auto w-full max-w-[900px] px-5 py-6 md:px-10">{children}</main>
+      <main className="mx-auto w-full max-w-[900px] px-5 py-6 md:px-10">
+        <div className="mb-4 flex justify-end">
+          <LangToggle />
+        </div>
+        {children}
+      </main>
       <nav className="fixed inset-x-0 bottom-0 z-40 flex justify-around border-t border-line bg-white py-2 md:hidden">
         {items.map(([href, label, I]) => (
-          <Link key={href} href={href} className={cx("urdu flex min-h-16 min-w-16 flex-col items-center justify-center text-sm", path === href ? "font-bold text-brand" : "text-ink-3")}>
+          <Link key={href} href={href} className={cx(ur && "urdu", "flex min-h-16 min-w-16 flex-col items-center justify-center text-sm", path === href ? "font-bold text-brand" : "text-ink-3")}>
             <I className="h-6 w-6" /> {label}
           </Link>
         ))}

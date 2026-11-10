@@ -62,8 +62,11 @@ export class AuthService {
       data: { phone, codeHash: this.codeHash(phone, code), expiresAt: new Date(now + OTP_TTL_MS), ip },
     });
 
-    if (process.env.OTP_MODE === 'sendpk' && !this.isDemoPhone(phone)) {
-      await this.sms.send(phone, `Roshan Rozgar code: ${code}. Valid 5 min. Do not share.`);
+    if (['simgate', 'sendpk', 'sms'].includes(process.env.OTP_MODE ?? '') && !this.isDemoPhone(phone)) {
+      const sent = await this.sms.send(phone, `Roshan Rozgar code: ${code}. Valid 5 min. Do not share.`);
+      if (sent) return { ok: true, resendIn: 60, sms: true };
+      // SMS failed: in demo mode show the code on screen so the live demo can't break.
+      if (demoMode()) return { ok: true, resendIn: 60, demoCode: code, smsFailed: true };
       return { ok: true, resendIn: 60 };
     }
     // Demo mode: no SMS; the code is shown in a "Demo OTP" banner only when DEMO_MODE=true.

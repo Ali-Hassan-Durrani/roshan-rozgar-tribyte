@@ -4,6 +4,7 @@ import { Lock, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ApiError, patch, post, rs, SECTORS, tradeName } from "@/lib/api";
+import { T } from "@/lib/i18n";
 import { useMe } from "./shell";
 import { Avatar, Button, ErrorNote, MicRecorder, Modal } from "./ui";
 import type { WorkerCardData } from "./worker-card";
@@ -75,7 +76,7 @@ export function RequestModal({ worker, onClose, problem }: { worker: WorkerCardD
       {worker && taken && (
         <div className="space-y-4">
           <p className="text-ink-2">
-            {worker.name} accepted another job a moment ago and is now <b className="text-busy">Busy</b>. Pick another available worker nearby.
+            {worker.name} accepted another job a moment ago and is now <b className="text-busy"><T en="Busy" ur="مصروف" /></b>. Pick another available worker nearby.
           </p>
           <Button size="L" className="w-full" onClick={() => { close(); router.push(`/c/workers?trade=${worker.trade}`); }}>
             See other {tradeName(worker.trade)}s
@@ -92,7 +93,7 @@ export function RequestModal({ worker, onClose, problem }: { worker: WorkerCardD
             </div>
           </div>
           <label className="block text-sm font-semibold">
-            What&apos;s the problem?
+            <T en="What's the problem?" ur="مسئلہ کیا ہے؟" />
             <textarea value={text} onChange={(e) => setText(e.target.value)} rows={2} className="mt-1 w-full rounded-xl border border-line p-3 font-normal" placeholder="Kitchen ka nalka leak ho raha hai…" />
           </label>
           <div className="flex items-center gap-3">
