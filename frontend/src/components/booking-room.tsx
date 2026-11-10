@@ -54,7 +54,9 @@ export function BookingRoom({ b, onChange, urdu }: { b: BookingView; onChange: (
   const end = useRef<HTMLDivElement>(null);
   const canChat = ACTIVE.includes(b.status);
 
-  useEffect(() => end.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }), [msgs?.length]);
+  useEffect(() => {
+    end.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [msgs?.length]);
 
   const act = async (fn: () => Promise<unknown>) => {
     setBusy(true);

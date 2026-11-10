@@ -50,7 +50,9 @@ export function LangProvider({ children }: { children: ReactNode }) {
 
 export function useDefaultLang(l: Lang) {
   const { applyDefault } = useLang();
-  useEffect(() => applyDefault(l), [l, applyDefault]);
+  useEffect(() => {
+    applyDefault(l);
+  }, [l, applyDefault]);
 }
 
 export const useLang = () => useContext(LangCtx);

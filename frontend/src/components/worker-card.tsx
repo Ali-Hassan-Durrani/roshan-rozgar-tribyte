@@ -27,8 +27,8 @@ export type WorkerCardData = {
 export function WorkerCard({ w, onRequest }: { w: WorkerCardData; onRequest?: (w: WorkerCardData) => void }) {
   const busy = w.availability !== "AVAILABLE";
   return (
-    <div className={cx("flex gap-4 rounded-3xl border border-line bg-white p-5 shadow-card transition hover:-translate-y-0.5", busy && "opacity-60")}>
-      <Avatar name={w.name} photoId={w.photoMediaId} size={64} />
+    <div className={cx("flex flex-wrap gap-4 rounded-3xl border border-line bg-white p-4 shadow-card transition hover:-translate-y-0.5 sm:flex-nowrap sm:p-5", busy && "opacity-60")}>
+      <Avatar name={w.name} photoId={w.photoMediaId} size={56} />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-1.5">
           <h3 className="text-lg font-bold">{w.name}</h3>
@@ -52,9 +52,10 @@ export function WorkerCard({ w, onRequest }: { w: WorkerCardData; onRequest?: (w
           <Sparkles className="h-3 w-3" /> {w.jobsDone} jobs done nearby
         </span>
       </div>
-      <div className="flex flex-col items-end justify-between gap-2">
+      {/* Phones: price + actions drop to a full-width row under the details. */}
+      <div className="flex w-full items-center justify-between gap-2 border-t border-line pt-3 sm:w-auto sm:flex-col sm:items-end sm:border-0 sm:pt-0">
         {busy ? <Badge tone="busy" dot><T en="Busy" ur="مصروف" /></Badge> : <Badge dot><T en="Available" ur="دستیاب" /></Badge>}
-        <div className="text-right">
+        <div className="text-end">
           <p className="text-xl font-extrabold">{rs(w.baseRate)}</p>
           <p className="text-xs text-ink-3"><T en="starting" ur="سے شروع" /></p>
         </div>

@@ -11,7 +11,7 @@ import { MapView, Pin } from "@/components/map-view";
 import { VoiceAgent } from "@/components/voice-agent";
 import { WorkerCard, WorkerCardData } from "@/components/worker-card";
 import { post, TRADES, useApi } from "@/lib/api";
-import { T } from "@/lib/i18n";
+import { T, useLang } from "@/lib/i18n";
 import { userText, VAPI_CUSTOMER, vapiEnabled } from "@/lib/vapi";
 
 const TRIES = ["AC thanda nahi kar raha", "Switch se chingari", "Darwaza band nahi hota"];
@@ -19,11 +19,12 @@ const TRIES = ["AC thanda nahi kar raha", "Switch se chingari", "Darwaza band na
 export default function Home() {
   const router = useRouter();
   const { data: me } = useMe();
+  const { t } = useLang();
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false);
   const [talk, setTalk] = useState(false);
   const [req, setReq] = useState<WorkerCardData | null>(null);
-  const { data } = useApi<{ workers: WorkerCardData[]; center: { lat: number; lng: number } }>("/workers/search?radiusKm=50", 10_000);
+  const { data } = useApi<{ workers: WorkerCardData[]; center: { lat: number; lng: number } }>("/workers/search?radiusKm=50&sort=distance", 10_000);
   const workers = data?.workers ?? [];
   const available = workers.filter((w) => w.availability === "AVAILABLE");
 
@@ -52,8 +53,8 @@ export default function Home() {
     <div className="min-h-screen pb-20 md:pb-0">
       <CustomerNav />
       <section className="hero-grad text-white">
-        <div className="mx-auto grid max-w-[1440px] gap-10 px-4 py-12 md:grid-cols-[1.1fr_1fr] md:px-16 md:py-16">
-          <PageFade>
+        <div className="mx-auto grid max-w-[1440px] grid-cols-1 gap-10 px-4 py-12 md:grid-cols-[1.1fr_1fr] md:px-16 md:py-16">
+          <PageFade className="min-w-0">
             <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-ink">
               <span className="h-2 w-2 rounded-full bg-ink" /> Live in Islamabad &amp; Rawalpindi · {available.length} workers online
             </span>
@@ -80,8 +81,8 @@ export default function Home() {
               <Link href={me ? "/c/diagnose?photo=1" : "/login"} className="hidden h-11 w-11 place-items-center rounded-xl bg-brand-50 md:grid" aria-label="Photo">
                 <Camera className="h-5 w-5" />
               </Link>
-              <button className="flex h-11 items-center gap-2 rounded-xl bg-amber px-5 font-bold">
-                {busy ? "Listening…" : "Find help"} <ArrowRight className="h-4 w-4" />
+              <button className="flex h-11 shrink-0 items-center gap-2 rounded-xl bg-amber px-3 font-bold md:px-5">
+                {busy ? t("Listening…", "سن رہے ہیں…") : t("Find help", "مدد ڈھونڈیں")} <ArrowRight className="hidden h-4 w-4 md:block" />
               </button>
             </form>
             <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
@@ -208,7 +209,7 @@ function MiniMap({ workers, center }: { workers: WorkerCardData[]; center?: { la
           <Avatar name={top.name} photoId={top.photoMediaId} />
           <div className="flex-1">
             <p className="font-bold">{top.name}</p>
-            <p className="text-xs text-ink-2">{top.distanceKm} km · {top.etaMin} min</p>
+            <p className="text-xs text-ink-2" dir="ltr">{top.distanceKm} km · {top.etaMin} min</p>
           </div>
           <Badge dot><T en="Available" ur="دستیاب" /></Badge>
         </div>

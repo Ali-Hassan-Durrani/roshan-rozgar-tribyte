@@ -8,7 +8,7 @@ import { CustomerPage } from "@/components/shell";
 import { cx, PageFade, Skeleton } from "@/components/ui";
 import { WorkerCard, WorkerCardData } from "@/components/worker-card";
 import { TRADES, useApi } from "@/lib/api";
-import { T } from "@/lib/i18n";
+import { T, useLang } from "@/lib/i18n";
 
 function Workers() {
   const sp = useSearchParams();
@@ -16,6 +16,7 @@ function Workers() {
   const trade = sp.get("trade") ?? "";
   const problem = sp.get("q") ?? undefined;
   const [sort, setSort] = useState("best");
+  const { t } = useLang();
   const [onlyFree, setOnlyFree] = useState(false);
   const [req, setReq] = useState<WorkerCardData | null>(null);
   const qs = new URLSearchParams({ radiusKm: "50", sort, ...(trade ? { trade } : {}), ...(onlyFree ? { availableNow: "true" } : {}) });
@@ -41,9 +42,9 @@ function Workers() {
           <input type="checkbox" checked={onlyFree} onChange={(e) => setOnlyFree(e.target.checked)} /> Free right now
         </label>
         <select value={sort} onChange={(e) => setSort(e.target.value)} className="rounded-xl border border-line bg-white px-3 py-2">
-          <option value="best"><T en="Best match" ur="بہترین" /></option>
-          <option value="distance"><T en="Nearest" ur="قریب ترین" /></option>
-          <option value="price"><T en="Lowest price" ur="کم قیمت" /></option>
+          <option value="best">{t("Best match", "بہترین")}</option>
+          <option value="distance">{t("Nearest", "قریب ترین")}</option>
+          <option value="price">{t("Lowest price", "کم قیمت")}</option>
         </select>
         <span className="text-ink-2">{list.filter((w) => w.availability === "AVAILABLE").length} available · {list.length} total</span>
       </div>
